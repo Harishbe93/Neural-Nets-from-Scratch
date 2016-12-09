@@ -100,3 +100,117 @@ y_grad=(forwardCircuit(x,y+h,z)-forwardCircuit(x,y,z))/h
 z_grad=(forwardCircuit(x,y,z+h)-forwardCircuit(x,y,z))/h
 
 print "Gradient checking using Numeric gradient Approach : ",x_grad,y_grad,z_grad
+
+### A Single Neuron implementation...without using classes..
+
+import math
+def sigmoid(x):
+	return 1/(1+math.exp(-x))
+
+a,b,c,x,y=1,2,-3,-1,3
+ax=forwardMultiplyGate(a,x)
+by=forwardMultiplyGate(b,y)
+axpby=forwardAddGate(ax,by)
+axpbypc=forwardAddGate(axpby,c)
+sig=sigmoid(axpbypc)
+print "Single Neuron - Sigmoid"
+print "Output ",sig
+
+### Gradient calculation...
+
+sig_grad_wrt_axpbypc=sig*(1-sig)
+sig_grad_wrt_axpby=1*sig_grad_wrt_axpbypc
+sig_grad_wrt_c=1*sig_grad_wrt_axpbypc
+sig_grad_wrt_ax=1*sig_grad_wrt_axpby
+sig_grad_wrt_by=1*sig_grad_wrt_axpby
+sig_grad_wrt_a=x*sig_grad_wrt_ax
+sig_grad_wrt_x=a*sig_grad_wrt_ax
+sig_grad_wrt_b=y*sig_grad_wrt_by
+sig_grad_wrt_y=b*sig_grad_wrt_by
+
+print "Gradients wrt a,b,c,x,y :",sig_grad_wrt_a,sig_grad_wrt_b,sig_grad_wrt_c,sig_grad_wrt_x,sig_grad_wrt_y
+
+
+### Using Python classes
+
+class Unit:
+	
+	def __init__(self,val,grad):
+		self.val=val
+		self.grad=grad
+
+class multiply:
+
+	def forward(self,u0,u1):
+		self.u0=u0
+		self.u1=u1
+		self.utop=Unit(u0.val*u1.val,0.0)
+		return self.utop
+	def backward(self):
+		self.u0.grad+=self.u1.val*self.utop.grad
+		self.u1.grad+=self.u0.val*self.utop.grad
+
+class add:
+	
+	def forward(self,u0,u1):
+		self.u0=u0
+		self.u1=u1
+		self.utop=Unit(u0.val+u1.val,0.0)
+		return self.utop
+	def backward(self):
+		self.u0.grad+=1*self.utop.grad
+		self.u1.grad+=1*self.utop.grad
+
+class sig:
+	def sig(self,u0):
+		return 1/(1+math.exp(-u0.val))
+	def forward(self,u0):
+		self.u0=u0
+		temp=self.sig(u0)
+		self.utop=Unit(temp,0.0)
+		return self.utop
+	def backward(self):
+		s=sigmoid(self.u0.val)
+		self.u0.grad+=(s*(1-s))*self.utop.grad
+
+a=Unit(1.0,0.0)
+b=Unit(2.0,0.0)
+c=Unit(-3.0,0.0)
+x=Unit(-1.0,0.0)
+y=Unit(3.0,0.0)
+
+mul1=multiply()
+mul2=multiply()
+add1=add()
+add2=add()
+sg=sig()
+
+ax=mul1.forward(a,x)
+by=mul2.forward(b,y)
+axpby=add1.forward(ax,by)
+axpbypc=add2.forward(axpby,c)
+ss=sg.forward(axpbypc)
+
+print ss.val,ss.grad
+
+### Backpropagation... ss contains output of sigmoid gate..Its gradient should be 1
+ss.grad=1
+sg.backward()
+add2.backward()
+add1.backward()
+mul2.backward()
+mul1.backward()
+
+print a.grad,b.grad,c.grad,x.grad,y.grad
+
+print "Old values :",a.val,b.val,c.val,x.val,y.val
+### Changing inputs according to the gradients...
+step=0.01
+a.val+=step*a.grad
+b.val+=step*b.grad
+c.val+=step*c.grad
+x.val+=step*x.grad
+y.val+=step*y.grad
+
+
+print "New values :",a.val,b.val,c.val,x.val,y.val
