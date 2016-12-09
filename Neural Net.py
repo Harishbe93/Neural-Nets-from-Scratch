@@ -1,3 +1,4 @@
+#### CREDITS : Andrej Karpathy
 ####                    Understanding neural nets in Python               ####
 
 ### A simple gate
